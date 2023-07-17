@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import {
+  Container,
+  TextField,
+  Button,
+  Typography,
+  Box,
+  Card,
+  CardContent,
+  Divider
+} from '@mui/material';
 import './App.css';
 
 const App = () => {
@@ -11,7 +21,9 @@ const App = () => {
 
   const getDirections = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/directions?origin=${origin}&destination=${destination}`);
+      const response = await axios.get(
+        `http://localhost:5000/directions?origin=${origin}&destination=${destination}`
+      );
       const { routes } = response.data;
       const parsedRoutes = routes.map((route, i) => {
         const { legs } = route;
@@ -20,12 +32,11 @@ const App = () => {
           return {
             routeId: i,
             distance: distance.text,
-            duration: duration.text,
+            duration: duration.value // Using duration value for comparison
           };
         }
-        return null;
       });
-      setRoutes(parsedRoutes.filter(Boolean));
+      setRoutes(parsedRoutes);
       setSelectedRoute(null); // Reset selected route
     } catch (error) {
       console.error(error);
@@ -34,7 +45,9 @@ const App = () => {
 
   const getRouteDetails = async (routeId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/directions?origin=${origin}&destination=${destination}`);
+      const response = await axios.get(
+        `http://localhost:5000/directions?origin=${origin}&destination=${destination}`
+      );
       const { routes } = response.data;
       if (routes.length > routeId) {
         const { legs } = routes[routeId];
@@ -44,7 +57,7 @@ const App = () => {
             step: i + 1,
             instruction: step.html_instructions,
             distance: step.distance.text,
-            duration: step.duration.text,
+            duration: step.duration.text
           }));
           setDirections(directions);
         }
@@ -54,36 +67,90 @@ const App = () => {
     }
   };
 
+  const getCardClassName = (routeId, duration) => {
+    if (selectedRoute === routeId) {
+      return 'route-card route-card-selected';
+    }
+    if (duration === Math.min(...routes.map((route) => route.duration))) {
+      return 'route-card route-card-fastest';
+    }
+    if (duration === Math.max(...routes.map((route) => route.duration))) {
+      return 'route-card route-card-slowest';
+    }
+    return 'route-card';
+  };
+
   return (
-    <div className="app-container">
-      <h1>Routing Service</h1>
-      <div className="form-container">
-        <input type="text" placeholder="Origin" value={origin} onChange={(e) => setOrigin(e.target.value)} />
-        <input type="text" placeholder="Destination" value={destination} onChange={(e) => setDestination(e.target.value)} />
-        <button onClick={getDirections}>Get Directions</button>
-      </div>
-      <div className="routes-container">
+    <Container className="app-container">
+      <Typography variant="h4" component="h1" gutterBottom>
+        Routing Service
+      </Typography>
+      <Box className="form-container">
+        <TextField
+          value={origin}
+          onChange={(e) => setOrigin(e.target.value)}
+          label="Origin"
+          margin="normal"
+          variant="outlined"
+          fullWidth
+        />
+        <TextField
+          value={destination}
+          onChange={(e) => setDestination(e.target.value)}
+          label="Destination"
+          margin="normal"
+          variant="outlined"
+          fullWidth
+        />
+        <Button variant="contained" color="primary" onClick={getDirections}>
+          Get Directions
+        </Button>
+      </Box>
+      <Box className="routes-container">
         {routes &&
           routes.map(({ routeId, distance, duration }) => (
-            <div key={routeId} className="route-card" onClick={() => getRouteDetails(routeId)}>
-              <h2>Route {routeId + 1}</h2>
-              <p>Distance: {distance}</p>
-              <p>Duration: {duration}</p>
-            </div>
+            <Card
+              key={routeId}
+              className={getCardClassName(routeId, duration)}
+              onClick={() => getRouteDetails(routeId)}
+            >
+              <CardContent>
+                <Typography variant="h5" component="div">
+                  Route {routeId + 1}
+                </Typography>
+                <Typography variant="body2">
+                  Distance: {distance}
+                </Typography>
+                <Typography variant="body2">
+                  Duration: {duration}
+                </Typography>
+              </CardContent>
+            </Card>
           ))}
-      </div>
-      <div className="directions-container">
+      </Box>
+      <Box className="directions-container">
         {directions &&
           directions.map(({ step, instruction, distance, duration }) => (
-            <div key={step} className="directions-card">
-              <h2>Step {step}</h2>
-              <p dangerouslySetInnerHTML={{ __html: instruction }}></p>
-              <p>Distance: {distance}</p>
-              <p>Duration: {duration}</p>
-            </div>
+            <Card key={step} className="directions-card">
+              <CardContent>
+                <Typography variant="h5" component="div">
+                  Step {step}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  dangerouslySetInnerHTML={{ __html: instruction }}
+                />
+                <Typography variant="body2">
+                  Distance: {distance}
+                </Typography>
+                <Typography variant="body2">
+                  Duration: {duration}
+                </Typography>
+              </CardContent>
+            </Card>
           ))}
-      </div>
-    </div>
+      </Box>
+    </Container>
   );
 };
 
