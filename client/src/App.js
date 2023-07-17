@@ -7,10 +7,24 @@ import {
   Typography,
   Box,
   Card,
-  CardContent,
-  Divider
+  CardContent
 } from '@mui/material';
+import { makeStyles } from '@mui/styles';
 import './App.css';
+
+const useStyles = makeStyles((theme) => ({
+  stepCard: {
+    '&.green': {
+      backgroundColor: '#b7e1cd',
+    },
+    '&.yellow': {
+      backgroundColor: '#ffe8a6',
+    },
+    '&.red': {
+      backgroundColor: '#f8c0c0',
+    },
+  },
+}));
 
 const App = () => {
   const [origin, setOrigin] = useState('');
@@ -18,15 +32,13 @@ const App = () => {
   const [routes, setRoutes] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [directions, setDirections] = useState(null);
-  const [isDataFromCache, setIsDataFromCache] = useState(false);
+  const [isForceGoogleAPI, setIsForceGoogleAPI] = useState(false);
   const [dataSource, setDataSource] = useState('');
-
-
 
   const getDirections = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/directions?origin=${origin}&destination=${destination}`
+        `http://localhost:5000/directions?origin=${origin}&destination=${destination}&forceGoogleAPI=${isForceGoogleAPI}`
       );
       const { routes } = response.data;
       const parsedRoutes = routes.map((route, i) => {
@@ -48,12 +60,10 @@ const App = () => {
     }
   };
 
-  
-
   const getRouteDetails = async (routeId) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/directions?origin=${origin}&destination=${destination}`
+        `http://localhost:5000/directions?origin=${origin}&destination=${destination}&forceGoogleAPI=${isForceGoogleAPI}`
       );
       const { routes } = response.data;
       if (routes.length > routeId) {
@@ -64,7 +74,11 @@ const App = () => {
             step: i + 1,
             instruction: step.html_instructions,
             distance: step.distance.text,
-            duration: step.duration.text
+            duration: step.duration.text,
+            color:
+              routeId < 3
+                ? ['green', 'yellow', 'red'][routeId]
+                : 'red'
           }));
           setDirections(directions);
         }
@@ -73,6 +87,7 @@ const App = () => {
       console.error(error);
     }
   };
+  
 
   const getCardClassName = (routeId, duration) => {
     if (selectedRoute === routeId) {
@@ -92,8 +107,8 @@ const App = () => {
       <Typography variant="h4" component="h1" gutterBottom>
         Routing Service
       </Typography>
-       {/* Display the data source */}
-       {dataSource && (
+      {/* Display the data source */}
+      {dataSource && (
         <Typography variant="subtitle1" gutterBottom>
           Data Source: {dataSource}
         </Typography>
@@ -115,18 +130,17 @@ const App = () => {
           variant="outlined"
           fullWidth
         />
-          <Button variant="contained" color="primary" onClick={getDirections}>
-            {isDataFromCache ? 'Get Cached Directions' : 'Get Directions'}
+        <Button variant="contained" color="primary" onClick={getDirections}>
+          {isForceGoogleAPI ? 'Get Real-time Directions' : 'Get Directions'}
         </Button>
         <div>
-            <input
-              type="checkbox"
-              value={isDataFromCache}
-              checked={isDataFromCache}
-              onChange={() => setIsDataFromCache(!isDataFromCache)}
-            />
-            <label>Use Google API</label>
-      </div>
+          <input
+            type="checkbox"
+            checked={isForceGoogleAPI}
+            onChange={() => setIsForceGoogleAPI(!isForceGoogleAPI)}
+          />
+          <label>Use Real-time Data</label>
+        </div>
       </Box>
       <Box className="routes-container">
         {routes &&
@@ -151,27 +165,24 @@ const App = () => {
           ))}
       </Box>
       <Box className="directions-container">
-        {directions &&
-          directions.map(({ step, instruction, distance, duration }) => (
-            <Card key={step} className="directions-card">
-              <CardContent>
-                <Typography variant="h5" component="div">
-                  Step {step}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  dangerouslySetInnerHTML={{ __html: instruction }}
-                />
-                <Typography variant="body2">
-                  Distance: {distance}
-                </Typography>
-                <Typography variant="body2">
-                  Duration: {duration}
-                </Typography>
-              </CardContent>
-            </Card>
-          ))}
-      </Box>
+  {directions &&
+    directions.map(({ step, instruction, distance, duration, color }) => (
+      <Card key={step} className={`directions-card ${color}`}>
+        <CardContent>
+          <Typography variant="h5" component="div">
+            Step {step}
+          </Typography>
+          <Typography
+            variant="body2"
+            dangerouslySetInnerHTML={{ __html: instruction }}
+          />
+          <Typography variant="body2">Distance: {distance}</Typography>
+          <Typography variant="body2">Duration: {duration}</Typography>
+        </CardContent>
+      </Card>
+    ))}
+</Box>
+
     </Container>
   );
 };
