@@ -21,6 +21,7 @@ mongoose.connect(MONGODB_URI, {
 
 
 app.get('/directions', async (req, res) => {
+    console.log(req.query)
     const { origin, destination } = req.query;
   
     try {
@@ -29,16 +30,15 @@ app.get('/directions', async (req, res) => {
   
       if (existingRoute) {
         // Route exists, retrieve and send the stored data
-        console.log('we are using mongo')
         const { data } = existingRoute;
-        res.json(data);
+        res.json({ ...data, dataSource: 'Mongo' });
       } else {
         // Route does not exist, make a request to the Google Maps API
         const response = await axios.get(
           `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${GOOGLE_API_KEY}&alternatives=true`
         );
         const { routes } = response.data;
-            console.log('we are using google api')
+  
         // Store the route in the database
         const route = new Route({
           origin,
@@ -48,12 +48,13 @@ app.get('/directions', async (req, res) => {
         await route.save();
   
         // Send the response
-        res.json(response.data);
+        res.json({ ...response.data, dataSource: 'Google' });
       }
     } catch (error) {
       res.json({ error: error.message });
     }
   });
+  
 
 app.get('/distancematrix', async (req, res) => {
     const { origins, destinations } = req.query;

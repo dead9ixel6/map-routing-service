@@ -18,6 +18,10 @@ const App = () => {
   const [routes, setRoutes] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [directions, setDirections] = useState(null);
+  const [isDataFromCache, setIsDataFromCache] = useState(false);
+  const [dataSource, setDataSource] = useState('');
+
+
 
   const getDirections = async () => {
     try {
@@ -38,10 +42,13 @@ const App = () => {
       });
       setRoutes(parsedRoutes);
       setSelectedRoute(null); // Reset selected route
+      setDataSource(response.data.dataSource); // Set the data source
     } catch (error) {
       console.error(error);
     }
   };
+
+  
 
   const getRouteDetails = async (routeId) => {
     try {
@@ -85,6 +92,12 @@ const App = () => {
       <Typography variant="h4" component="h1" gutterBottom>
         Routing Service
       </Typography>
+       {/* Display the data source */}
+       {dataSource && (
+        <Typography variant="subtitle1" gutterBottom>
+          Data Source: {dataSource}
+        </Typography>
+      )}
       <Box className="form-container">
         <TextField
           value={origin}
@@ -102,9 +115,18 @@ const App = () => {
           variant="outlined"
           fullWidth
         />
-        <Button variant="contained" color="primary" onClick={getDirections}>
-          Get Directions
+          <Button variant="contained" color="primary" onClick={getDirections}>
+            {isDataFromCache ? 'Get Cached Directions' : 'Get Directions'}
         </Button>
+        <div>
+            <input
+              type="checkbox"
+              value={isDataFromCache}
+              checked={isDataFromCache}
+              onChange={() => setIsDataFromCache(!isDataFromCache)}
+            />
+            <label>Use Google API</label>
+      </div>
       </Box>
       <Box className="routes-container">
         {routes &&
