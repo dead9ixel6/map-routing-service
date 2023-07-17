@@ -61,7 +61,3 @@ To run this project locally, follow the steps below:
 - Enter an origin and destination to retrieve multiple routes with distances and durations.
 - Click on a route card to view step-by-step directions for that route.
 - The application uses MongoDB to cache route data for faster retrieval. If a route has been previously searched for, the cached data will be used instead of making a new request to the Google Maps API. You can force the application to use real-time data from the API by checking the "Force Google API" checkbox.
-- Each route is color-coded: the first route is green, the second route is yellow, and subsequent routes are red. The step-by-step directions for each route are also color-coded accordingly.
-```
-
-Please note that you may need to customize the instructions or add additional information based on your project's specific details and requirements.
