@@ -22,18 +22,24 @@ mongoose.connect(MONGODB_URI, {
 
 app.get('/directions', async (req, res) => {
     console.log(req.query)
-    const { origin, destination } = req.query;
+    const { origin, destination, forceGoogleAPI } = req.query;
   
     try {
       // Check if the route already exists in the database
       const existingRoute = await Route.findOne({ origin, destination });
-  
-      if (existingRoute) {
+        
+        console.log('Printing tow values')
+        console.log(forceGoogleAPI)
+        
+        console.log(existingRoute)
+      if (existingRoute && forceGoogleAPI == 'false') {
         // Route exists, retrieve and send the stored data
+        console.log('Using Mongo')
         const { data } = existingRoute;
         res.json({ ...data, dataSource: 'Mongo' });
       } else {
         // Route does not exist, make a request to the Google Maps API
+        console.log('Using Google')
         const response = await axios.get(
           `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${GOOGLE_API_KEY}&alternatives=true`
         );
