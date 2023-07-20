@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Container,
@@ -11,6 +11,19 @@ import {
 } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 import './App.css';
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAKW7awwtDt3YBTx7LgzThVXL26De6zPt8",
+  authDomain: "map-routing-service.firebaseapp.com",
+  projectId: "map-routing-service",
+  storageBucket: "map-routing-service.appspot.com",
+  messagingSenderId: "1007713910064",
+  appId: "1:1007713910064:web:5f5e017dfb6ef203a75cf5"
+};
+
+firebase.initializeApp(firebaseConfig);
 
 const useStyles = makeStyles((theme) => ({
   stepCard: {
@@ -34,9 +47,32 @@ const App = () => {
   const [directions, setDirections] = useState(null);
   const [isForceGoogleAPI, setIsForceGoogleAPI] = useState(false);
   const [dataSource, setDataSource] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    firebase.auth().onAuthStateChanged((user) => {
+      setIsAuthenticated(!!user);
+    });
+  }, []);
+
+  const authenticate = () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider);
+  };
+
+  const signOut = () => {
+    firebase.auth().signOut();
+  };
 
   const getDirections = async () => {
     try {
+      const user = firebase.auth().currentUser;
+      if (!user) {
+        console.log('User is not authenticated');
+        return;
+      }
+
+      // Proceed with the API request
       const response = await axios.get(
         `http://localhost:5000/directions?origin=${origin}&destination=${destination}&forceGoogleAPI=${isForceGoogleAPI}`
       );
@@ -62,6 +98,13 @@ const App = () => {
 
   const getRouteDetails = async (routeId) => {
     try {
+      const user = firebase.auth().currentUser;
+      if (!user) {
+        console.log('User is not authenticated');
+        return;
+      }
+
+      // Proceed with the API request
       const response = await axios.get(
         `http://localhost:5000/directions?origin=${origin}&destination=${destination}&forceGoogleAPI=${isForceGoogleAPI}`
       );
@@ -87,7 +130,6 @@ const App = () => {
       console.error(error);
     }
   };
-  
 
   const getCardClassName = (routeId, duration) => {
     if (selectedRoute === routeId) {
@@ -107,82 +149,97 @@ const App = () => {
       <Typography variant="h4" component="h1" gutterBottom>
         Routing Service
       </Typography>
-      {/* Display the data source */}
-      {dataSource && (
-        <Typography variant="subtitle1" gutterBottom>
-          Data Source: {dataSource}
-        </Typography>
-      )}
-      <Box className="form-container">
-        <TextField
-          value={origin}
-          onChange={(e) => setOrigin(e.target.value)}
-          label="Origin"
-          margin="normal"
-          variant="outlined"
-          fullWidth
-        />
-        <TextField
-          value={destination}
-          onChange={(e) => setDestination(e.target.value)}
-          label="Destination"
-          margin="normal"
-          variant="outlined"
-          fullWidth
-        />
-        <Button variant="contained" color="primary" onClick={getDirections}>
-          {isForceGoogleAPI ? 'Get Real-time Directions' : 'Get Directions'}
-        </Button>
-        <div>
-          <input
-            type="checkbox"
-            checked={isForceGoogleAPI}
-            onChange={() => setIsForceGoogleAPI(!isForceGoogleAPI)}
-          />
-          <label>Use Real-time Data</label>
-        </div>
-      </Box>
-      <Box className="routes-container">
-        {routes &&
-          routes.map(({ routeId, distance, duration }) => (
-            <Card
-              key={routeId}
-              className={getCardClassName(routeId, duration)}
-              onClick={() => getRouteDetails(routeId)}
-            >
-              <CardContent>
-                <Typography variant="h5" component="div">
-                  Route {routeId + 1}
-                </Typography>
-                <Typography variant="body2">
-                  Distance: {distance}
-                </Typography>
-                <Typography variant="body2">
-                  Duration: {duration}
-                </Typography>
-              </CardContent>
-            </Card>
-          ))}
-      </Box>
-      <Box className="directions-container">
-  {directions &&
-    directions.map(({ step, instruction, distance, duration, color }) => (
-      <Card key={step} className={`directions-card ${color}`}>
-        <CardContent>
-          <Typography variant="h5" component="div">
-            Step {step}
+      {isAuthenticated ? (
+        <>
+          {/* Display the data source */}
+          {dataSource && (
+            <Typography variant="subtitle1" gutterBottom>
+              Data Source: {dataSource}
+            </Typography>
+          )}
+          <Box className="form-container">
+            <TextField
+              value={origin}
+              onChange={(e) => setOrigin(e.target.value)}
+              label="Origin"
+              margin="normal"
+              variant="outlined"
+              fullWidth
+            />
+            <TextField
+              value={destination}
+              onChange={(e) => setDestination(e.target.value)}
+              label="Destination"
+              margin="normal"
+              variant="outlined"
+              fullWidth
+            />
+            <Button variant="contained" color="primary" onClick={getDirections}>
+              {isForceGoogleAPI ? 'Get Real-time Directions' : 'Get Directions'}
+            </Button>
+            <div>
+              <input
+                type="checkbox"
+                checked={isForceGoogleAPI}
+                onChange={() => setIsForceGoogleAPI(!isForceGoogleAPI)}
+              />
+              <label>Use Real-time Data</label>
+            </div>
+            <Button variant="contained" color="primary" onClick={signOut}>
+              Sign Out
+            </Button>
+          </Box>
+          <Box className="routes-container">
+            {routes &&
+              routes.map(({ routeId, distance, duration }) => (
+                <Card
+                  key={routeId}
+                  className={getCardClassName(routeId, duration)}
+                  onClick={() => getRouteDetails(routeId)}
+                >
+                  <CardContent>
+                    <Typography variant="h5" component="div">
+                      Route {routeId + 1}
+                    </Typography>
+                    <Typography variant="body2">
+                      Distance: {distance}
+                    </Typography>
+                    <Typography variant="body2">
+                      Duration: {duration}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))}
+          </Box>
+          <Box className="directions-container">
+            {directions &&
+              directions.map(({ step, instruction, distance, duration, color }) => (
+                <Card key={step} className={`directions-card ${color}`}>
+                  <CardContent>
+                    <Typography variant="h5" component="div">
+                      Step {step}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      dangerouslySetInnerHTML={{ __html: instruction }}
+                    />
+                    <Typography variant="body2">Distance: {distance}</Typography>
+                    <Typography variant="body2">Duration: {duration}</Typography>
+                  </CardContent>
+                </Card>
+              ))}
+          </Box>
+        </>
+      ) : (
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Please sign in to use the Routing Service.
           </Typography>
-          <Typography
-            variant="body2"
-            dangerouslySetInnerHTML={{ __html: instruction }}
-          />
-          <Typography variant="body2">Distance: {distance}</Typography>
-          <Typography variant="body2">Duration: {duration}</Typography>
-        </CardContent>
-      </Card>
-    ))}
-</Box>
-
+          <Button variant="contained" color="primary" onClick={authenticate}>
+            Sign In with Google
+          </Button>
+        </Box>
+      )}
     </Container>
   );
 };
